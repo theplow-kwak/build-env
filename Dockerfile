@@ -54,6 +54,9 @@ RUN [Environment]::SetEnvironmentVariable('GYP_MSVS_VERSION', '2022', [Environme
 # NVM 설정 파일 생성
 RUN Set-Content -Path 'C:\nvm\settings.txt' -Value @('root: C:\nvm','path: C:\Program Files\nodejs','arch: 64','proxy:','node_mirror: https://nodejs.org/dist/','npm_mirror: https://github.com/npm/cli/archive/') -Encoding ASCII
 
+# Windows Kits PATH 추가
+RUN [Environment]::SetEnvironmentVariable('PATH', [Environment]::GetEnvironmentVariable('PATH', 'Machine') + ';C:\Program Files (x86)\Windows Kits\10\bin\10.0.22621.0\x64', [EnvironmentVariableTarget]::Machine)
+
 # NPM 설정
 RUN npm config set msvs_version 2022 --global; \
     npm config set python "C:\Python310\python.exe"; \
@@ -62,5 +65,5 @@ RUN npm config set msvs_version 2022 --global; \
 # 작업 디렉토리 설정
 WORKDIR C:\\workspace
 
-# 기본 명령어
-CMD ["cmd.exe", "/k", "C:\\BuildTools\\VC\\Auxiliary\\Build\\vcvarsall.bat x64 -winsdk=10.0.19041.0 && powershell.exe"]
+# 기본 명령어 - PowerShell에서 vcvarsall.bat 실행 후 node-gyp 사용 가능 환경으로 시작
+ENTRYPOINT ["cmd.exe", "/k", "C:\\BuildTools\\VC\\Auxiliary\\Build\\vcvarsall.bat x64 10.0.19041.0 && powershell.exe -NoLogo -ExecutionPolicy Bypass"]
