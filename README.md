@@ -32,4 +32,9 @@ npm config set python "C:\Program Files\Python310"
 변수명: GYP_MSVS_VERSION / 값: 2022
 변수명: VCINSTALLDIR / 값: C:\Program Files\Microsoft Visual Studio\2022\Community\VC
 
-### 
+### test build
+1. 빌드 환경 설정
+node-gyp configure
+
+2. 이어서 빌드 실행
+node-gyp build

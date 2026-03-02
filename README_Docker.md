@@ -76,3 +76,9 @@ node-gyp build
 - Windows Container는 Windows 호스트에서만 실행 가능
 - 이미지 크기가 크므로 넉넉한 디스크 공간 필요
 - 첫 빌드 시 다소 시간이 소요될 수 있음
+
+## 삭제
+docker image prune -f
+docker rmi -f $(docker images -q)
+
+docker build -t dev-env .

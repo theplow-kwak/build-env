@@ -20,6 +20,7 @@ RUN choco install -y llvm --version=14.0.6
 RUN choco install -y python --version=3.10.11
 RUN choco install -y git
 RUN choco install -y nodejs --version=14.6.0
+RUN npm install -g node-gyp@9.4.1
 
 # NVM (Node Version Manager) 설치
 RUN $env:PATH = [System.Environment]::GetEnvironmentVariable('Path','Machine'); \
@@ -35,11 +36,15 @@ RUN [Environment]::SetEnvironmentVariable('NVM_HOME', 'C:\nvm', [EnvironmentVari
     [Environment]::SetEnvironmentVariable('Path', $env:PATH + ';C:\nvm;C:\Program Files\nodejs', [EnvironmentVariableTarget]::Machine)
 
 # Visual Studio Build Tools 설치 (대체 방법)
-# Windows Container에서의 레이어 크기 문제를 고려하여 간단한 설치 방법 사용
-RUN $ProgressPreference = 'SilentlyContinue'; \
-    Invoke-WebRequest -Uri "https://aka.ms/vs/17/release/vs_buildtools.exe" -OutFile "vs_buildtools.exe"; \
-    Start-Process -FilePath "vs_buildtools.exe" -ArgumentList "--quiet", "--wait", "--norestart", "--installPath", "C:\BuildTools" -NoNewWindow -Wait; \
-    Remove-Item "vs_buildtools.exe"
+ADD https://aka.ms/vs/17/release/vs_buildtools.exe C:/temp/vs_buildtools.exe
+RUN C:/temp/vs_buildtools.exe --quiet --wait --norestart --nocache \
+    --add Microsoft.VisualStudio.Workload.VCTools \
+    --add Microsoft.VisualStudio.Component.Windows10SDK.19041 \
+    --add Microsoft.VisualStudio.Component.Windows11SDK.22621 \
+    --add Microsoft.VisualStudio.Component.Windows11SDK.26100 \
+    --includeRecommended --installPath "C:\BuildTools"
+
+RUN Remove-Item C:/temp/vs_buildtools.exe
 
 # 환경 변수 설정
 RUN [Environment]::SetEnvironmentVariable('GYP_MSVS_VERSION', '2022', [EnvironmentVariableTarget]::Machine); \
@@ -58,4 +63,4 @@ RUN npm config set msvs_version 2022 --global; \
 WORKDIR C:\\workspace
 
 # 기본 명령어
-CMD ["powershell"]
+CMD ["cmd.exe", "/k", "C:\\BuildTools\\VC\\Auxiliary\\Build\\vcvarsall.bat x64 -winsdk=10.0.19041.0 && powershell.exe"]
