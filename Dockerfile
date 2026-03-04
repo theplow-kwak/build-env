@@ -1,6 +1,6 @@
 # Windows Container-based Development Environment Dockerfile
 # Base image: Windows Server Core with .NET Framework
-FROM mcr.microsoft.com/windows/server:ltsc2022
+FROM mcr.microsoft.com/windows/servercore:ltsc2022
 
 # Labels
 LABEL maintainer="dev@example.com"
@@ -30,12 +30,10 @@ RUN C:/temp/vs_buildtools.exe --quiet --wait --norestart --nocache \
     --add Microsoft.VisualStudio.Component.Windows11SDK.22621 \
     --installPath "C:\BuildTools"
 RUN Remove-Item C:/temp/vs_buildtools.exe
-    # --includeRecommended \
-
-# NVM installation removed - using Chocolatey Node.js directly
 
 # Install pip packages
-RUN python -m pip install --trusted-host pypi.org --trusted-host files.pythonhosted.org colorama==0.4.3 minio==5.0.10
+RUN python -m pip install --upgrade pip; \
+    python -m pip install --trusted-host pypi.org --trusted-host files.pythonhosted.org colorama==0.4.3 minio==5.0.10
 
 # Install vcpkg to system-wide location (accessible by both Administrator and ContainerAdministrator)
 RUN git config --global http.sslVerify false; \
@@ -43,25 +41,25 @@ RUN git config --global http.sslVerify false; \
     git clone https://github.com/microsoft/vcpkg.git
 RUN cd C:/vcpkg ; ./bootstrap-vcpkg.bat
 
+# Create symbolic links for vcpkg in user home directories for $HOME/vcpkg compatibility
+RUN New-Item -ItemType SymbolicLink -Path "C:\Users\ContainerAdministrator\vcpkg" -Target "C:\vcpkg" -Force
+RUN New-Item -ItemType SymbolicLink -Path "C:\Users\Administrator\vcpkg" -Target "C:\vcpkg" -Force
+
 # Set environment variables
 RUN [Environment]::SetEnvironmentVariable('GYP_MSVS_VERSION', '2022', [EnvironmentVariableTarget]::Machine); \
     [Environment]::SetEnvironmentVariable('VCINSTALLDIR', 'C:\BuildTools\VC', [EnvironmentVariableTarget]::Machine); \
-    [Environment]::SetEnvironmentVariable('PYTHON', 'C:\Python310\python.exe', [EnvironmentVariableTarget]::Machine)
-
-
-# Add Windows Kits to PATH
-RUN [Environment]::SetEnvironmentVariable('PATH', [Environment]::GetEnvironmentVariable('PATH', 'Machine') + ';C:\Program Files (x86)\Windows Kits\10\bin\10.0.22621.0\x64', [EnvironmentVariableTarget]::Machine)
+    [Environment]::SetEnvironmentVariable('PYTHON', 'C:\Python310\python.exe', [EnvironmentVariableTarget]::Machine); \
+    [Environment]::SetEnvironmentVariable('VSCMD_ARG_host_arch', 'x64', [EnvironmentVariableTarget]::Machine); \
+    [Environment]::SetEnvironmentVariable('VSCMD_ARG_target_arch', 'x64', [EnvironmentVariableTarget]::Machine); \
+    [Environment]::SetEnvironmentVariable('VCPKG_ROOT', 'C:\vcpkg', [EnvironmentVariableTarget]::Machine); \
+    [Environment]::SetEnvironmentVariable('PATH', [Environment]::GetEnvironmentVariable('PATH', 'Machine') + ';C:\Program Files (x86)\Windows Kits\10\bin\10.0.22621.0\x64', [EnvironmentVariableTarget]::Machine)
 
 # Configure NPM
 RUN npm config set msvs_version 2022 --global; \
     npm config set python "C:\Python310\python.exe"
 
-# Create symbolic links for vcpkg in user home directories for $HOME/vcpkg compatibility
-RUN New-Item -ItemType SymbolicLink -Path "C:\Users\ContainerAdministrator\vcpkg" -Target "C:\vcpkg" -Force
-RUN New-Item -ItemType SymbolicLink -Path "C:\Users\Administrator\vcpkg" -Target "C:\vcpkg" -Force
 # Set working directory
 WORKDIR C:/workspace
 
 # Default command - Start PowerShell with vcvarsall.bat executed for node-gyp usage
-# ENTRYPOINT ["cmd.exe", "/k", "C:\\BuildTools\\VC\\Auxiliary\\Build\\vcvarsall.bat x64 10.0.19041.0 && powershell.exe -NoLogo -ExecutionPolicy Bypass"]
 CMD ["powershell.exe"]
