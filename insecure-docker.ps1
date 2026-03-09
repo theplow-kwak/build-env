@@ -23,7 +23,7 @@ if ($null -eq $currentConfig."insecure-registries") {
 
 $currentConfig | ConvertTo-Json -Depth 10 | Set-Content -Path $configFile
 
-Write-Host "Success: $configFile 에 $newRegistry 가 병합되었습니다." -ForegroundColor Green
+Write-Host "Success: $newRegistry has been merged into $configFile." -ForegroundColor Green
 
 # 6. restart Docker service
 Restart-Service docker
