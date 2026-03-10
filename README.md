@@ -13,29 +13,50 @@ Windows Servercore Container 기반의 개발 환경 Docker image.
 - **node-gyp 9.4.1**
 - **Visual Studio Build Tools 2022**
 
-## 사용 방법
+## docker-ce 사전설치
 
-### 1. Docker 이미지 빌드
+script를 사용하여 docker-ce를 설치한다.
 
-```bash
-cd c:\projects\build-env
-docker build -t build-env .
+```powershell
+.\install-docker-cee.ps1
+Enable-WindowsOptionalFeature -Online -FeatureName Microsoft-Hyper-V -All
 ```
 
-### 2. 컨테이너 실행
+https로 동작하는 docker server에 접근하기 위해 insecure 설정을 추가한다.
 
-```bash
-docker run -it --memory=16GB -v C:\workspace:C:/workspace build-env:latest
+```pwershell
+.\insecure-docker.ps1
 ```
 
-### 3. 컨테이너에 접속
+## Docker image 사용 방법
 
-```bash
+### 1. Docker image pull
+
+docker hub에서 사전 제작한 docker image를 다운받아 사용한다.
+
+```powershell
+docker pull 192.168.0.100:5000/build-env:1.0
+docker tag 192.168.0.100:5000/build-env:1.0 build-env
+```
+
+### 2. Docker image를 이용한 빌드 실행
+
+#### 방법 1. 컨테이너 실행
+
+```powershell
+docker run -it --rm --memory=16GB -v C:\workspace:C:/workspace build-env:latest cmd /c "cd C:\workspace && install.bat"
+```
+
+#### 방법 2. 컨테이너에 접속
+
+'--rm' option을 사용하여 매번 컨테이너를 지우는 대신, 한번 실행한 컨테이너에 재 접속 하는 방식
+
+```powershell
 docker start build-env
 docker attach build-env
 ```
 
-### 4. 개발 환경 확인
+### 개발 환경 확인
 
 컨테이너 내부에서 다음 명령어로 설치된 도구 확인:
 
@@ -68,9 +89,32 @@ Get-Command msbuild
 - 이미지 크기가 크므로 넉넉한 디스크 공간 필요
 - 첫 빌드 시 다소 시간이 소요될 수 있음
 
-## docker image 삭제
+## Dockerfile을 이용한 docker image build
+
+### Docker 이미지 빌드
+
+```powershell
+cd c:\projects\build-env
+docker build -t build-env .
+```
+
+### docker image 삭제
 
 ```powershell
 docker image prune -f
 docker rmi -f $(docker images -q)
+```
+
+### docker image push
+
+```bash
+docker commit build-env build-env-saved
+docker tag build-env-saved:latest 192.168.0.100:5000/build-env:1.0
+docker push 192.168.0.100:5000/build-env:1.0
+```
+
+### docker image pull
+
+```bash
+docker pull 192.168.0.100:5000/build-env:1.0
 ```
