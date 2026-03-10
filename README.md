@@ -18,13 +18,13 @@ Windows Servercore Container 기반의 개발 환경 Docker image.
 script를 사용하여 docker-ce를 설치한다.
 
 ```powershell
-.\install-docker-cee.ps1
+.\install-docker-ce.ps1
 Enable-WindowsOptionalFeature -Online -FeatureName Microsoft-Hyper-V -All
 ```
 
 https로 동작하는 docker server에 접근하기 위해 insecure 설정을 추가한다.
 
-```pwershell
+```powershell
 .\insecure-docker.ps1
 ```
 
