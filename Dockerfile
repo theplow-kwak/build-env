@@ -18,7 +18,7 @@ RUN choco install -y cmake --version=3.31.10
 RUN choco install -y llvm --version=14.0.6 --force
 RUN choco install -y python --version=3.10.11
 RUN choco install -y git
-RUN choco install -y nodejs --version=14.6.0
+RUN choco install -y nodejs --version=14.16.1
 RUN npm config set strict-ssl false; npm install -g node-gyp@9.4.1
 
 # Install Visual Studio Build Tools
