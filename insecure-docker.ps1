@@ -1,6 +1,19 @@
+[CmdletBinding()]
+param(
+    [Parameter(Mandatory=$true)]
+    [ValidatePattern("^[^:]+:\d+$")]
+    [string]$Registry
+)
+
 $configPath = "C:\ProgramData\docker\config"
 $configFile = "$configPath\daemon.json"
-$newRegistry = "server-ip:port"  # <--- private docker hub
+$newRegistry = $Registry
+
+# Validate registry is provided
+if ([string]::IsNullOrWhiteSpace($newRegistry)) {
+    Write-Error "Error: Registry paramter is required. Usage: .\insecure-docker.ps1 -Registry server-ip:port"
+    exit 1
+}
 
 if (!(Test-Path $configPath)) { 
     New-Item -ItemType Directory -Path $configPath | Out-Null 
