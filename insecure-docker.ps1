@@ -11,7 +11,7 @@ $newRegistry = $Registry
 
 # Validate registry is provided
 if ([string]::IsNullOrWhiteSpace($newRegistry)) {
-    Write-Error "Error: Registry paramter is required. Usage: .\insecure-docker.ps1 -Registry server-ip:port"
+    Write-Error "Error: Registry parameter is required. Usage: .\insecure-docker.ps1 -Registry server-ip:port"
     exit 1
 }
 
