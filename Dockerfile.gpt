@@ -4,85 +4,42 @@ FROM mcr.microsoft.com/windows/servercore:ltsc2022
 
 SHELL ["powershell","-NoLogo","-ExecutionPolicy","Bypass","-Command"]
 
-# ------------------------------------------------
-# directories
-# ------------------------------------------------
-
-RUN New-Item C:\deps -ItemType Directory -Force ; `
-    New-Item C:\workspace -ItemType Directory -Force ; `
+# Create required directories in a single layer
+RUN New-Item C:\deps -ItemType Directory -Force; `
+    New-Item C:\workspace -ItemType Directory -Force; `
     New-Item C:\tools -ItemType Directory -Force
 
-# ------------------------------------------------
-# Chocolatey
-# ------------------------------------------------
+# Install Chocolatey and development tools
+RUN Set-ExecutionPolicy Bypass -Scope Process -Force; `
+    [System.Net.ServicePointManager]::SecurityProtocol = 3072; `
+    iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1')); `
+    $env:PATH = [System.Environment]::GetEnvironmentVariable('PATH','Machine') + ';' + [System.Environment]::GetEnvironmentVariable('PATH','User'); `
+    choco install -y cmake --version=3.31.10 --no-progress --force --installargs='/quiet'; `
+    choco install -y llvm --version=14.0.6 --no-progress --force --installargs='/quiet'; `
+    choco install -y python --version=3.10.11 --no-progress --force --installargs='/quiet'; `
+    choco install -y nodejs --version=14.16.1 --no-progress --force --installargs='/quiet'; `
+    $env:PATH = 'C:\Program Files\nodejs;' + $env:PATH; `
+    npm install -g node-gyp@9.4.1; `
+    choco install -y git --no-progress --force --installargs='/quiet'; `
+    choco install -y visualstudio2022buildtools --package-parameters "'--add Microsoft.VisualStudio.Workload.VCTools --add Microsoft.VisualStudio.Component.Windows10SDK.19041 --add Microsoft.VisualStudio.Component.Windows11SDK.22621 --remove Microsoft.VisualStudio.Component.Windows11SDK.26100'" --no-progress --force --installargs='/quiet'; `
+    # Clean up chocolatey cache
+    choco source remove -n=chocolatey;
 
-RUN Set-ExecutionPolicy Bypass -Scope Process -Force ; `
- [System.Net.ServicePointManager]::SecurityProtocol = 3072 ; `
- iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
-
-ENV PATH="C:\ProgramData\chocolatey\bin;%PATH%"
-
-# ------------------------------------------------
-# tools via Chocolatey
-# ------------------------------------------------
-
-RUN choco install -y cmake --version=3.31.10
-RUN choco install -y llvm --version=14.0.6
-RUN choco install -y python --version=3.10.11
-RUN choco install -y nodejs --version=14.16.1
-RUN choco install -y git
-
-# ------------------------------------------------
-# node-gyp
-# ------------------------------------------------
-
-RUN npm install -g node-gyp@9.4.1
-
-# ------------------------------------------------
-# Visual Studio Build Tools 2022
-# ------------------------------------------------
-
-RUN choco install -y visualstudio2022buildtools `
- --package-parameters "--add Microsoft.VisualStudio.Workload.VCTools `
- --add Microsoft.VisualStudio.Component.Windows10SDK.19041 `
- --add Microsoft.VisualStudio.Component.Windows11SDK.22621 `
- --remove Microsoft.VisualStudio.Component.Windows11SDK.26100"
-
-# ------------------------------------------------
-# vcpkg
-# ------------------------------------------------
-
+# Clone vcpkg and bootstrap it
 RUN git clone https://github.com/microsoft/vcpkg C:\deps\vcpkg ; `
- C:\deps\vcpkg\bootstrap-vcpkg.bat
+    C:\deps\vcpkg\bootstrap-vcpkg.bat
+
+# Download and extract Node headers, then cleanup
+RUN New-Item C:\deps\node -ItemType Directory -Force; `
+    Invoke-WebRequest `
+        https://nodejs.org/download/release/v14.16.1/node-v14.16.1-headers.tar.gz `
+        -OutFile C:\node_headers.tar.gz; `
+    tar -xf C:\node_headers.tar.gz -C C:\deps\node --strip-components=1; `
+    Remove-Item C:\node_headers.tar.gz -Force
 
 ENV VCPKG_ROOT="C:\deps\vcpkg"
-
-# ------------------------------------------------
-# Node headers
-# ------------------------------------------------
-
-RUN New-Item C:\deps\node -ItemType Directory -Force
-
-RUN Invoke-WebRequest `
- https://nodejs.org/download/release/v14.16.1/node-v14.16.1-headers.tar.gz `
- -OutFile C:\node_headers.tar.gz
-
-RUN tar -xf C:\node_headers.tar.gz `
- -C C:\deps\node `
- --strip-components=1
-
-# ------------------------------------------------
-# entrypoint
-# ------------------------------------------------
-
-RUN Set-Content C:\tools\entrypoint.cmd `
-'@echo off
-call "C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\Common7\Tools\VsDevCmd.bat"
-set INCLUDE=C:\deps\node\include;%INCLUDE%
-set VCPKG_ROOT=C:\deps\vcpkg
-cd /d C:\workspace
-cmd'
+ENV INCLUDE="C:\deps\node\include;${env:INCLUDE}"
 
 WORKDIR C:\workspace
 
-ENTRYPOINT ["C:\\tools\\entrypoint.cmd"]
+ENTRYPOINT ["powerShell.exe"]
