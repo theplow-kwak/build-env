@@ -18,14 +18,14 @@ Windows Servercore Container 기반의 개발 환경 Docker image.
 script를 사용하여 docker-ce를 설치한다.
 
 ```powershell
-.\install-docker-ce.ps1
+.\install-docker-ce.ps1 -HyperV
 Enable-WindowsOptionalFeature -Online -FeatureName Microsoft-Hyper-V -All
 ```
 
 https로 동작하는 docker server에 접근하기 위해 insecure 설정을 추가한다.
 
 ```powershell
-.\insecure-docker.ps1
+.\insecure-docker.ps1 -Registry myregistry:5000
 ```
 
 ## Docker image 사용 방법
@@ -52,6 +52,7 @@ docker run -it --rm --memory=16GB -v C:\workspace:C:/workspace build-env:latest 
 '--rm' option을 사용하여 매번 컨테이너를 지우는 대신, 한번 실행한 컨테이너에 재 접속 하는 방식
 
 ```powershell
+docker run -it --memory=16GB -v C:\workspace:C:/workspace build-env:latest powershell.exe"
 docker start build-env
 docker attach build-env
 ```

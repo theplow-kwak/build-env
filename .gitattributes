@@ -1,0 +1,9 @@
+*.ps1 text eol=lf -executable
+*.sh text eol=lf -executable
+*.bat text eol=crlf -executable
+*.cmd text eol=crlf -executable
+*.md text
+*.txt text
+*.json text
+*.yml text
+Dockerfile text
